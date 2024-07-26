@@ -1048,8 +1048,8 @@ bool ProteusIII_Transmit(uint8_t *payloadP, uint16_t length) {
         if (FillChecksum(&txPacket)) {
             ProteusIII_UART_Transmit((uint8_t *)&txPacket,
                                      txPacket.Length + LENGTH_CMD_OVERHEAD);
-            return Wait4CNF(CMD_WAIT_TIME, PROTEUSIII_CMD_TXCOMPLETE_RSP,
-                            CMD_Status_Success, true);
+            return true;//Wait4CNF(CMD_WAIT_TIME, PROTEUSIII_CMD_TXCOMPLETE_RSP,
+                   //         CMD_Status_Success, true);
         }
     }
     return false;

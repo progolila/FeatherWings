@@ -71,7 +71,10 @@ typedef struct
 
 sensorperiod padssensorperiod, itdssensorperiod, hidssensorperiod, tidssensorperiod;
 
-static uint8_t payload[100] = {0};
+#define payloadgrid 14
+#define datatransmits 15
+
+static uint8_t payload[datatransmits*payloadgrid] = {0};
 static int payloadLength = 0;
 
 void setup()
@@ -155,7 +158,7 @@ void setup()
     }
 
     padssensorperiod = {5000, 0};
-    itdssensorperiod = {10, 0};
+    itdssensorperiod = {2, 0};
     tidssensorperiod = {5000, 0};
     hidssensorperiod = {5000, 0};
 
@@ -263,7 +266,7 @@ void loop()
             uint32touint8array(&payload[payloadLength + 2], ITDS_accelX * 1000);
             uint32touint8array(&payload[payloadLength + 6], ITDS_accelY * 1000);
             uint32touint8array(&payload[payloadLength + 10], ITDS_accelZ * 1000);
-            payloadLength += 14;
+            payloadLength += payloadgrid;
             // int i;
             // for(i=0;i<20;i++)
             // {
@@ -324,7 +327,7 @@ void loop()
 //             payloadLength += 11;
 //             hidssensorperiod.lastupdate = currtime;
 //         }
-        if (payloadLength > 3*14)
+        if (payloadLength >= payloadgrid*datatransmits)
         {   
             WE_DEBUG_PRINT("Payload Length: %d\r\n",payloadLength);
             ProteusIII_Transmit(payload, payloadLength);
