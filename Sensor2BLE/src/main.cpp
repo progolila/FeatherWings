@@ -71,7 +71,7 @@ typedef struct
 
 sensorperiod padssensorperiod, itdssensorperiod, hidssensorperiod, tidssensorperiod;
 
-static uint8_t payload[54] = {0};
+static uint8_t payload[100] = {0};
 static int payloadLength = 0;
 
 void setup()
@@ -192,15 +192,23 @@ void setup()
 #endif
 }
 
+
+
 void loop()
-{
+{   
+    
     switch (currentstate)
     {
     default:
     case Sensor2BLE_SM_Idle:
-        break;
-    case Sensor2BLE_SM_Send_Sensor_Interval:
     {
+        payloadLength = 0;
+        WE_DEBUG_PRINT("Case Idle\r\n");
+        break;
+    }
+    case Sensor2BLE_SM_Send_Sensor_Interval:
+    {   
+        WE_DEBUG_PRINT("Sensor Interval\r\n");
         payload[0] = 7;
         payload[1] = 1;
         payload[2] = 0;
@@ -225,22 +233,23 @@ void loop()
     }
     case Sensor2BLE_SM_Send_Sensor_Data:
     {
+        WE_DEBUG_PRINT("Send Sensor Data\r\n");
         unsigned long currtime = millis();
-        payloadLength = 0;
-        if (((currtime - padssensorperiod.lastupdate) >= padssensorperiod.sensorperiod) && PADS_2511020213301_readSensorData(&PADS_pressure, &PADS_temp))
-        {
-            WE_DEBUG_PRINT("WSEN_PADS: Atm. Pres: %f kPa Temp: %f °C\r\n",
-                           PADS_pressure, PADS_temp);
-            payload[0] = 11;
-            payload[1] = 0;
-            payload[2] = 0;
-            uint32touint8array(&payload[3], PADS_pressure * 100);
-            uint32touint8array(&payload[7], PADS_temp * 100);
-            payloadLength += 11;
-            padssensorperiod.lastupdate = currtime;
-        }
+        
+        // if (((currtime - padssensorperiod.lastupdate) >= padssensorperiod.sensorperiod) && PADS_2511020213301_readSensorData(&PADS_pressure, &PADS_temp))
+        // {
+        //     WE_DEBUG_PRINT("WSEN_PADS: Atm. Pres: %f kPa Temp: %f °C\r\n",
+        //                    PADS_pressure, PADS_temp);
+        //     payload[0] = 11;
+        //     payload[1] = 0;
+        //     payload[2] = 0;
+        //     uint32touint8array(&payload[3], PADS_pressure * 100);
+        //     uint32touint8array(&payload[7], PADS_temp * 100);
+        //     payloadLength += 11;
+        //     padssensorperiod.lastupdate = currtime;
+        // }
         if (((currtime - itdssensorperiod.lastupdate) >= itdssensorperiod.sensorperiod) && ITDS_2533020201601_readSensorData(&ITDS_accelX, &ITDS_accelY,
-                                                                                                                             &ITDS_accelZ, &ITDS_temp))
+                                                                                                                            &ITDS_accelZ, &ITDS_temp))
         {
             // WE_DEBUG_PRINT(SerialDebug,
             //                "WSEN_ITDS(Acceleration): X:%f g Y:%f g  Z:%f g Temp: %f °C\r\n",
@@ -248,69 +257,79 @@ void loop()
             //                sensorITDS->data[itdsYAcceleration],
             //                sensorITDS->data[itdsZAcceleration],
             //                sensorITDS->data[itdsTemperature]);
-            payload[payloadLength] = 19;
+            payload[payloadLength] = 21;
             payload[payloadLength + 1] = 0;
-            payload[payloadLength + 2] = 1;
+            payload[payloadLength + 2] = uint8_t(currtime - itdssensorperiod.lastupdate);
             uint32touint8array(&payload[payloadLength + 3], ITDS_accelX * 1000);
             uint32touint8array(&payload[payloadLength + 7], ITDS_accelY * 1000);
             uint32touint8array(&payload[payloadLength + 11], ITDS_accelZ * 1000);
             uint32touint8array(&payload[payloadLength + 15], ITDS_temp * 100);
             payloadLength += 19;
+            // int i;
+            // for(i=0;i<20;i++)
+            // {
+            //     payload[payloadLength + 18 + i] = 10 + i;
+            // }
+            // payloadLength += 38;
             itdssensorperiod.lastupdate = currtime;
         }
-        if ((currtime - eventattrlastupdate) >= eventattrdelay)
-        {
-            if (ITDS_2533020201601_readDoubleTapEvent(&ITDS_doubleTapEvent) && ITDS_doubleTapEvent)
-            {
-                WE_DEBUG_PRINT("Double Tap Detected\r\n");
-                payload[payloadLength] = 3;
-                payload[payloadLength + 1] = 2;
-                payload[payloadLength + 2] = 1;
-                payloadLength += 3;
-            }
-            if (ITDS_2533020201601_readFreeFallEvent(&ITDS_freeFallEvent) && ITDS_freeFallEvent)
-            {
-                WE_DEBUG_PRINT("Free Fall Detected\r\n");
-                payload[payloadLength] = 3;
-                payload[payloadLength + 1] = 3;
-                payload[payloadLength + 2] = 1;
-                payloadLength += 3;
-            }
-            eventattrlastupdate = currtime;
-        }
-        if (((currtime - tidssensorperiod.lastupdate) >= tidssensorperiod.sensorperiod) && TIDS_2521020222501_readSensorData(&TIDS_temp))
-        {
-            WE_DEBUG_PRINT("WSEN_TIDS(Temperature): %f °C\r\n", TIDS_temp);
-            payload[payloadLength] = 7;
-            payload[payloadLength + 1] = 0;
-            payload[payloadLength + 2] = 2;
-            uint32touint8array(&payload[payloadLength + 3], TIDS_temp * 100);
-            payloadLength += 7;
-            tidssensorperiod.lastupdate = currtime;
-        }
-        if (((currtime - hidssensorperiod.lastupdate) >= hidssensorperiod.sensorperiod) &&
-#if HIDS_PART_NUMBER == 2525020210001
-            HIDS_2525020210001_readSensorData(&HIDS_humidity, &HIDS_temp)
-#elif HIDS_PART_NUMBER == 2525020210002
-            HIDS_2525020210002_readSensorData(&HIDS_humidity, &HIDS_temp)
-#else
-            false
-#endif
-        )
-        {
-            WE_DEBUG_PRINT("WSEN_HIDS: RH: %f %% Temp: %f °C\r\n", HIDS_humidity,
-                           HIDS_temp);
-            payload[payloadLength] = 11;
-            payload[payloadLength + 1] = 0;
-            payload[payloadLength + 2] = 3;
-            uint32touint8array(&payload[payloadLength + 3], HIDS_humidity * 100);
-            uint32touint8array(&payload[payloadLength + 7], HIDS_temp * 100);
-            payloadLength += 11;
-            hidssensorperiod.lastupdate = currtime;
-        }
-        if (payloadLength != 0)
-        {
+        
+        
+        // if ((currtime - eventattrlastupdate) >= eventattrdelay)
+        // {
+        //     if (ITDS_2533020201601_readDoubleTapEvent(&ITDS_doubleTapEvent) && ITDS_doubleTapEvent)
+        //     {
+        //         WE_DEBUG_PRINT("Double Tap Detected\r\n");
+        //         payload[payloadLength] = 3;
+        //         payload[payloadLength + 1] = 2;
+        //         payload[payloadLength + 2] = 1;
+        //         payloadLength += 3;
+        //     }
+        //     if (ITDS_2533020201601_readFreeFallEvent(&ITDS_freeFallEvent) && ITDS_freeFallEvent)
+        //     {
+        //         WE_DEBUG_PRINT("Free Fall Detected\r\n");
+        //         payload[payloadLength] = 3;
+        //         payload[payloadLength + 1] = 3;
+        //         payload[payloadLength + 2] = 1;
+        //         payloadLength += 3;
+        //     }
+        //     eventattrlastupdate = currtime;
+        // }
+        // if (((currtime - tidssensorperiod.lastupdate) >= tidssensorperiod.sensorperiod) && TIDS_2521020222501_readSensorData(&TIDS_temp))
+        // {
+        //     WE_DEBUG_PRINT("WSEN_TIDS(Temperature): %f °C\r\n", TIDS_temp);
+        //     payload[payloadLength] = 7;
+        //     payload[payloadLength + 1] = 0;
+        //     payload[payloadLength + 2] = 2;
+        //     uint32touint8array(&payload[payloadLength + 3], TIDS_temp * 100);
+        //     payloadLength += 7;
+        //     tidssensorperiod.lastupdate = currtime;
+        // }
+//         if (((currtime - hidssensorperiod.lastupdate) >= hidssensorperiod.sensorperiod) &&
+// #if HIDS_PART_NUMBER == 2525020210001
+//             HIDS_2525020210001_readSensorData(&HIDS_humidity, &HIDS_temp)
+// #elif HIDS_PART_NUMBER == 2525020210002
+//             HIDS_2525020210002_readSensorData(&HIDS_humidity, &HIDS_temp)
+// #else
+//             false
+// #endif
+//         )
+//         {
+//             WE_DEBUG_PRINT("WSEN_HIDS: RH: %f %% Temp: %f °C\r\n", HIDS_humidity,
+//                            HIDS_temp);
+//             payload[payloadLength] = 11;
+//             payload[payloadLength + 1] = 0;
+//             payload[payloadLength + 2] = 3;
+//             uint32touint8array(&payload[payloadLength + 3], HIDS_humidity * 100);
+//             uint32touint8array(&payload[payloadLength + 7], HIDS_temp * 100);
+//             payloadLength += 11;
+//             hidssensorperiod.lastupdate = currtime;
+//         }
+        if (payloadLength > 4*19)
+        {   
+            WE_DEBUG_PRINT("Payload Length: %d\r\n",payloadLength);
             ProteusIII_Transmit(payload, payloadLength);
+            payloadLength = 0;
         }
         break;
     }
