@@ -155,7 +155,7 @@ void setup()
     }
 
     padssensorperiod = {5000, 0};
-    itdssensorperiod = {30, 0};
+    itdssensorperiod = {10, 0};
     tidssensorperiod = {5000, 0};
     hidssensorperiod = {5000, 0};
 
@@ -233,7 +233,7 @@ void loop()
     }
     case Sensor2BLE_SM_Send_Sensor_Data:
     {
-        WE_DEBUG_PRINT("Send Sensor Data\r\n");
+        //WE_DEBUG_PRINT("Send Sensor Data\r\n");
         unsigned long currtime = millis();
         
         // if (((currtime - padssensorperiod.lastupdate) >= padssensorperiod.sensorperiod) && PADS_2511020213301_readSensorData(&PADS_pressure, &PADS_temp))
@@ -251,20 +251,19 @@ void loop()
         if (((currtime - itdssensorperiod.lastupdate) >= itdssensorperiod.sensorperiod) && ITDS_2533020201601_readSensorData(&ITDS_accelX, &ITDS_accelY,
                                                                                                                             &ITDS_accelZ, &ITDS_temp))
         {
+            WE_DEBUG_PRINT("delta time sensor: %d\r\n",currtime - itdssensorperiod.lastupdate)
             // WE_DEBUG_PRINT(SerialDebug,
             //                "WSEN_ITDS(Acceleration): X:%f g Y:%f g  Z:%f g Temp: %f °C\r\n",
             //                sensorITDS->data[itdsXAcceleration],
             //                sensorITDS->data[itdsYAcceleration],
             //                sensorITDS->data[itdsZAcceleration],
             //                sensorITDS->data[itdsTemperature]);
-            payload[payloadLength] = 21;
-            payload[payloadLength + 1] = 0;
-            payload[payloadLength + 2] = uint8_t(currtime - itdssensorperiod.lastupdate);
-            uint32touint8array(&payload[payloadLength + 3], ITDS_accelX * 1000);
-            uint32touint8array(&payload[payloadLength + 7], ITDS_accelY * 1000);
-            uint32touint8array(&payload[payloadLength + 11], ITDS_accelZ * 1000);
-            uint32touint8array(&payload[payloadLength + 15], ITDS_temp * 100);
-            payloadLength += 19;
+            payload[payloadLength] = uint8_t(payloadLength);
+            payload[payloadLength + 1] = uint8_t(currtime - itdssensorperiod.lastupdate);
+            uint32touint8array(&payload[payloadLength + 2], ITDS_accelX * 1000);
+            uint32touint8array(&payload[payloadLength + 6], ITDS_accelY * 1000);
+            uint32touint8array(&payload[payloadLength + 10], ITDS_accelZ * 1000);
+            payloadLength += 14;
             // int i;
             // for(i=0;i<20;i++)
             // {
@@ -325,7 +324,7 @@ void loop()
 //             payloadLength += 11;
 //             hidssensorperiod.lastupdate = currtime;
 //         }
-        if (payloadLength > 4*19)
+        if (payloadLength > 3*14)
         {   
             WE_DEBUG_PRINT("Payload Length: %d\r\n",payloadLength);
             ProteusIII_Transmit(payload, payloadLength);
