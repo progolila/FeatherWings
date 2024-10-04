@@ -1988,7 +1988,7 @@ float ITDS_convertAccelerationFs4g_float(int16_t acc)
  */
 float ITDS_convertAccelerationFs8g_float(int16_t acc)
 {
-  return ((float)acc) * 0.244f;
+  return ((float)acc) * 1.952f;
 }
 
 /**

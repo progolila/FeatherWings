@@ -214,7 +214,7 @@ bool ITDS_2533020201601_simpleInit() {
         return false;
     }
     // /*2g*/
-    status = ITDS_setFullScale(&itds_2533020201601, ITDS_twoG);
+    status = ITDS_setFullScale(&itds_2533020201601, ITDS_sixteenG);
     if (status != WE_SUCCESS) {
         WE_DEBUG_PRINT("set set full scale fail\r\n");
         return false;
@@ -321,7 +321,7 @@ bool ITDS_2533020201601_readSensorData(float *accelX, float *accelY,
             XRawAcc = XRawAcc >> 2;
             *accelX = (float)(XRawAcc);
             *accelX = *accelX / 1000;
-            *accelX = *accelX * 0.244;
+            *accelX = *accelX * 1.952;
             /*Round to 3 decimal places*/
             *accelX = round(*accelX * 1000) / (float)1000;
         }
@@ -335,7 +335,7 @@ bool ITDS_2533020201601_readSensorData(float *accelX, float *accelY,
             YRawAcc = YRawAcc >> 2;
             *accelY = (float)(YRawAcc);
             *accelY = *accelY / 1000;
-            *accelY = *accelY * 0.244;
+            *accelY = *accelY * 1.952;
             /*Round to 3 decimal places*/
             *accelY = round(*accelY * 1000) / (float)1000;
         }
@@ -349,7 +349,7 @@ bool ITDS_2533020201601_readSensorData(float *accelX, float *accelY,
             ZRawAcc = ZRawAcc >> 2;
             *accelZ = (float)(ZRawAcc);
             *accelZ = *accelZ / 1000;
-            *accelZ = *accelZ * 0.244;
+            *accelZ = *accelZ * 1.952;
             /*Round to 3 decimal places*/
             *accelZ = round(*accelZ * 1000) / (float)1000;
         }
